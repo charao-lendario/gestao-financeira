@@ -92,10 +92,32 @@ export function ContratoForm({ contratoId }: ContratoFormProps) {
 
     const mutation = contratoId ? updateMutation : createMutation;
 
+    // Limpar campos vazios e irrelevantes antes de enviar
+    const dataToSend = {
+      clienteId: formData.clienteId,
+      nomeProjeto: formData.nomeProjeto,
+      dataContrato: formData.dataContrato,
+      valorTotal: formData.valorTotal,
+      formaPagamento: formData.formaPagamento,
+      observacoes: formData.observacoes || undefined,
+      // Campos condicionais baseados no tipo de pagamento
+      ...(formData.formaPagamento === 'PARCELADO' && {
+        qtdParcelas: formData.qtdParcelas,
+        diaVencimento: formData.diaVencimento,
+        dataInicioCobranca: formData.dataInicioCobranca || undefined,
+        dataFimCobranca: formData.dataFimCobranca || undefined,
+      }),
+      ...(formData.formaPagamento === 'MENSALIDADE' && {
+        diaVencimento: formData.diaVencimento,
+        dataInicioCobranca: formData.dataInicioCobranca || undefined,
+        dataFimCobranca: formData.dataFimCobranca || undefined,
+      }),
+    };
+
     mutation.mutate(
       contratoId
-        ? { id: contratoId, data: formData }
-        : formData,
+        ? { id: contratoId, data: dataToSend }
+        : dataToSend,
       {
         onSuccess: () => {
           toast.success(
@@ -257,7 +279,7 @@ export function ContratoForm({ contratoId }: ContratoFormProps) {
               />
             </div>
 
-            {formData.formaPagamento === 'MENSALIDADE' && (
+            {(formData.formaPagamento === 'PARCELADO' || formData.formaPagamento === 'MENSALIDADE') && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Data Fim da Cobrança (opcional)

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateCliente, useUpdateCliente, useClienteById } from '@/hooks';
 import { validateCPFOrCNPJ, formatCPFOrCNPJ } from '@gestao-financeira/shared/utils';
@@ -10,24 +10,40 @@ interface ClienteFormProps {
   clienteId?: string;
 }
 
+const initialFormData = {
+  nome: '',
+  documento: '',
+  contatoNome: '',
+  telefone: '',
+  email: '',
+  cidade: '',
+  uf: '',
+  responsavelInterno: '',
+};
+
 export function ClienteForm({ clienteId }: ClienteFormProps) {
   const router = useRouter();
   const { data: cliente, isLoading: loadingCliente } = useClienteById(clienteId || '');
   const createMutation = useCreateCliente();
   const updateMutation = useUpdateCliente();
 
-  const [formData, setFormData] = useState(
-    cliente || {
-      nome: '',
-      documento: '',
-      contatoNome: '',
-      telefone: '',
-      email: '',
-      cidade: '',
-      uf: '',
-      responsavelInterno: '',
+  const [formData, setFormData] = useState(initialFormData);
+
+  // Atualizar formData quando os dados do cliente forem carregados
+  useEffect(() => {
+    if (cliente) {
+      setFormData({
+        nome: cliente.nome || '',
+        documento: cliente.documento || '',
+        contatoNome: cliente.contatoNome || '',
+        telefone: cliente.telefone || '',
+        email: cliente.email || '',
+        cidade: cliente.cidade || '',
+        uf: cliente.uf || '',
+        responsavelInterno: cliente.responsavelInterno || '',
+      });
     }
-  );
+  }, [cliente]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

@@ -8,6 +8,8 @@ export const validateRequest =
       req.body = await schema.parseAsync(req.body);
       next();
     } catch (error: any) {
+      console.log('Validation error:', JSON.stringify(error.errors, null, 2));
+      console.log('Request body:', JSON.stringify(req.body, null, 2));
       res.status(400).json({
         success: false,
         error: 'Validation error',

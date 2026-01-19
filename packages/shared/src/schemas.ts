@@ -18,6 +18,12 @@ export const updateClienteSchema = createClienteSchema.partial();
 export type CreateClienteInput = z.infer<typeof createClienteSchema>;
 export type UpdateClienteInput = z.infer<typeof updateClienteSchema>;
 
+// Helper para transformar string vazia em undefined
+const emptyStringToUndefined = z.preprocess(
+  (val) => (val === '' ? undefined : val),
+  z.coerce.date().optional()
+);
+
 // Contrato Schemas
 export const createContratoSchema = z.object({
   clienteId: z.string().uuid('ID de cliente inválido'),
@@ -27,8 +33,8 @@ export const createContratoSchema = z.object({
   formaPagamento: z.nativeEnum(FormaPagamento),
   qtdParcelas: z.coerce.number().int().positive().optional(),
   diaVencimento: z.coerce.number().int().min(1).max(31).optional(),
-  dataInicioCobranca: z.coerce.date().optional(),
-  dataFimCobranca: z.coerce.date().optional(),
+  dataInicioCobranca: emptyStringToUndefined,
+  dataFimCobranca: emptyStringToUndefined,
   observacoes: z.string().optional(),
 });
 
