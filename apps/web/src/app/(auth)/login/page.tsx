@@ -32,7 +32,7 @@ export default function LoginPage() {
 
       if (result.success) {
         toast.success('Login realizado com sucesso!');
-        router.push('/dashboard');
+        router.push('/');
       } else {
         toast.error(result.error || 'Erro ao fazer login');
       }
