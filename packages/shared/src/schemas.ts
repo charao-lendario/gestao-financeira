@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FormaPagamento, ClienteStatus, ContratoStatus, ParcelaStatus } from './types';
+import { FormaPagamento } from './types';
 
 // Cliente Schemas
 export const createClienteSchema = z.object({
