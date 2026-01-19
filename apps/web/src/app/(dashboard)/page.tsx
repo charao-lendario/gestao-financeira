@@ -32,12 +32,12 @@ function SummaryCard({
 }
 
 export default function DashboardPage() {
-  const { data: resumo, isLoading: loadingResumo } = useDashboardResumo();
+  const { data: resumo } = useDashboardResumo();
   const { data: graficoData, isLoading: loadingGrafico } = useDashboardGraficoMensal();
   const { data: proximasVencimentos } = useDashboardProximosVencimentos();
   const { data: atrasados } = useDashboardAtrasados();
 
-  const chartData = graficoData?.map((mes: any, idx: number) => ({
+  const chartData = graficoData?.map((mes: any) => ({
     mes: meses[mes.mes - 1],
     previsto: mes.previsto,
     pago: mes.pago,

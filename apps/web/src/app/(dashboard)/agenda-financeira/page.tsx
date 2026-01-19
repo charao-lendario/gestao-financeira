@@ -46,7 +46,13 @@ export default function AgendaFinanceiraPage() {
     }
 
     marcarPagoMutation.mutate(
-      { id: selectedParcela.id, data: pagamentoData },
+      {
+        id: selectedParcela.id,
+        data: {
+          ...pagamentoData,
+          dataPagamento: new Date(pagamentoData.dataPagamento),
+        }
+      },
       {
         onSuccess: () => {
           toast.success('Parcela marcada como paga!');
@@ -131,13 +137,12 @@ export default function AgendaFinanceiraPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Status</p>
-              <p className={`font-semibold mt-1 ${
-                selectedParcela.status === 'PAGO'
+              <p className={`font-semibold mt-1 ${selectedParcela.status === 'PAGO'
                   ? 'text-green-600'
                   : selectedParcela.status === 'ATRASADO'
-                  ? 'text-red-600'
-                  : 'text-yellow-600'
-              }`}>
+                    ? 'text-red-600'
+                    : 'text-yellow-600'
+                }`}>
                 {selectedParcela.status}
               </p>
             </div>

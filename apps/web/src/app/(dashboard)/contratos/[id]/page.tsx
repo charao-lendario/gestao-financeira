@@ -27,7 +27,13 @@ export default function ContratoDetailPage({ params }: { params: { id: string } 
     }
 
     marcarPagoMutation.mutate(
-      { id: selectedParcela.id, data: pagamentoData },
+      {
+        id: selectedParcela.id,
+        data: {
+          ...pagamentoData,
+          dataPagamento: new Date(pagamentoData.dataPagamento),
+        }
+      },
       {
         onSuccess: () => {
           toast.success('Parcela marcada como paga!');
@@ -136,13 +142,12 @@ export default function ContratoDetailPage({ params }: { params: { id: string } 
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          parcela.status === 'PAGO'
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${parcela.status === 'PAGO'
                             ? 'bg-green-100 text-green-800'
                             : parcela.status === 'ATRASADO'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
                       >
                         {parcela.status}
                         {parcela.diasAtraso > 0 && ` (${parcela.diasAtraso}d)`}

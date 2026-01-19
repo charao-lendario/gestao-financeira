@@ -3,8 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateContrato, useUpdateContrato, useContratoById, useClientes } from '@/hooks';
-import { GeradorParcelasService } from '@gestao-financeira/shared/utils';
-import { FormaPagamento, formatDate, formatCurrency } from '@gestao-financeira/shared/utils';
+import { formatDate, formatCurrency } from '@gestao-financeira/shared/utils';
 import { toast } from 'sonner';
 
 interface ContratoFormProps {
@@ -33,29 +32,38 @@ export function ContratoForm({ contratoId }: ContratoFormProps) {
     }
   );
 
-  // Gerar preview de parcelas
+  // Gerar preview de parcelas (implementação simplificada)
   const parcelasPreview = useMemo(() => {
     if (!formData.valorTotal || formData.valorTotal <= 0) return [];
 
     try {
-      const parcelas = GeradorParcelasService.gerarParcelas(
-        'PREVIEW',
-        formData.formaPagamento as FormaPagamento,
-        Number(formData.valorTotal),
-        formData.qtdParcelas,
-        formData.diaVencimento,
-        formData.dataInicioCobranca ? new Date(formData.dataInicioCobranca) : undefined,
-        formData.dataFimCobranca ? new Date(formData.dataFimCobranca) : undefined
-      );
+      const parcelas: any[] = [];
+      const qtd = formData.formaPagamento === 'A_VISTA' ? 1 : (formData.qtdParcelas || 1);
+      const valorParcela = Number(formData.valorTotal) / qtd;
+      const dataInicio = formData.dataInicioCobranca ? new Date(formData.dataInicioCobranca) : new Date();
+
+      for (let i = 0; i < qtd; i++) {
+        const dataVencimento = new Date(dataInicio);
+        dataVencimento.setMonth(dataVencimento.getMonth() + i);
+        if (formData.diaVencimento) {
+          dataVencimento.setDate(formData.diaVencimento);
+        }
+        parcelas.push({
+          numeroParcela: i + 1,
+          valorPrevisto: valorParcela,
+          dataVencimento: dataVencimento.toISOString(),
+          competencia: `${dataVencimento.getMonth() + 1}/${dataVencimento.getFullYear()}`,
+        });
+      }
       return parcelas;
-    } catch (error) {
+    } catch {
       return [];
     }
   }, [formData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: typeof formData) => ({
       ...prev,
       [name]: name === 'valorTotal' ? parseFloat(value) || 0 : value,
     }));

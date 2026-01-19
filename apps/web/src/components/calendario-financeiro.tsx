@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatCurrency, formatDate } from '@gestao-financeira/shared/utils';
+import { formatCurrency } from '@gestao-financeira/shared/utils';
 
 interface Parcela {
   id: string;
@@ -125,9 +125,8 @@ export function CalendarioFinanceiro({ parcelas, onSelectParcela }: CalendarioFi
           return (
             <div
               key={idx}
-              className={`min-h-32 p-2 border border-gray-200 rounded-lg ${
-                dia ? 'bg-white' : 'bg-gray-50'
-              }`}
+              className={`min-h-32 p-2 border border-gray-200 rounded-lg ${dia ? 'bg-white' : 'bg-gray-50'
+                }`}
             >
               {dia && (
                 <>

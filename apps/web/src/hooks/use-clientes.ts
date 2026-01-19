@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
-import type { Cliente, CreateClienteInput, UpdateClienteInput } from '@gestao-financeira/shared';
+import type { CreateClienteInput, UpdateClienteInput } from '@gestao-financeira/shared';
 
 export const useClientes = (page = 1, search?: string) => {
   return useQuery({

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useContratos, useClientes, useParcelas } from '@/hooks';
+import { useClientes, useParcelas } from '@/hooks';
 import { formatCurrency, formatDate } from '@gestao-financeira/shared/utils';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -29,7 +29,6 @@ const FORMA_PAGAMENTO_OPTIONS = [
 
 export default function RelatoriosPage() {
     const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth();
 
     // Filtros
     const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -45,10 +44,8 @@ export default function RelatoriosPage() {
     const [ordemAsc, setOrdemAsc] = useState(true);
 
     const { data: clientesData } = useClientes(1, '');
-    const { data: contratosData } = useContratos(1, selectedCliente || undefined);
     const { data: parcelasData } = useParcelas(1);
 
-    const contratos = contratosData?.data || [];
     const parcelas = parcelasData?.data || [];
     const clientes = clientesData?.data || [];
 
@@ -554,9 +551,9 @@ export default function RelatoriosPage() {
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${parcela.status === 'PAGO' ? 'bg-green-100 text-green-800' :
-                                                    parcela.status === 'ATRASADO' ? 'bg-red-100 text-red-800' :
-                                                        parcela.status === 'CANCELADO' ? 'bg-gray-100 text-gray-800' :
-                                                            'bg-yellow-100 text-yellow-800'
+                                                parcela.status === 'ATRASADO' ? 'bg-red-100 text-red-800' :
+                                                    parcela.status === 'CANCELADO' ? 'bg-gray-100 text-gray-800' :
+                                                        'bg-yellow-100 text-yellow-800'
                                                 }`}>
                                                 {parcela.status}
                                             </span>
