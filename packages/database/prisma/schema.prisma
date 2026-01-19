@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ClienteStatus {
+  ATIVO
+  INATIVO
+}
+
+enum FormaPagamento {
+  A_VISTA
+  PARCELADO
+  MENSALIDADE
+}
+
+enum ContratoStatus {
+  ATIVO
+  FINALIZADO
+  CANCELADO
+}
+
+enum ParcelaStatus {
+  PREVISTO
+  PAGO
+  ATRASADO
+  CANCELADO
+}
+
+enum FormaRecebimento {
+  PIX
+  TRANSFERENCIA
+  BOLETO
+  CHEQUE
+  CARTAO
+}
+
+model Cliente {
+  id                 String         @id @default(uuid())
+  clienteId          String         @unique // CLT-0001
+  nome               String
+  documento          String         @unique // CPF/CNPJ
+  contatoNome        String?
+  telefone           String?
+  email              String?
+  cidade             String?
+  uf                 String?
+  responsavelInterno String?
+  status             ClienteStatus  @default(ATIVO)
+  criadoEm           DateTime       @default(now())
+  atualizadoEm       DateTime       @updatedAt
+  contratos          Contrato[]
+}
+
+model Contrato {
+  id                   String          @id @default(uuid())
+  contratoId           String          @unique // CTR-2026-001
+  clienteId            String
+  nomeProjeto          String
+  dataContrato         DateTime        @db.Date
+  valorTotal           Decimal         @db.Decimal(12, 2)
+  formaPagamento       FormaPagamento
+  qtdParcelas          Int?
+  diaVencimento        Int?            // 1-31
+  dataInicioCobranca   DateTime?       @db.Date
+  dataFimCobranca      DateTime?       @db.Date
+  observacoes          String?         @db.Text
+  status               ContratoStatus  @default(ATIVO)
+  criadoEm             DateTime        @default(now())
+  atualizadoEm         DateTime        @updatedAt
+  cliente              Cliente         @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  parcelas             Parcela[]
+
+  @@index([clienteId])
+}
+
+model Parcela {
+  id               String          @id @default(uuid())
+  parcelaId        String          @unique
+  contratoId       String
+  competencia      String          // "01/2026"
+  numeroParcela    Int
+  dataVencimento   DateTime        @db.Date
+  valorPrevisto    Decimal         @db.Decimal(12, 2)
+  dataPagamento    DateTime?       @db.Date
+  valorPago        Decimal?        @db.Decimal(12, 2)
+  status           ParcelaStatus   @default(PREVISTO)
+  diasAtraso       Int             @default(0)
+  formaRecebimento FormaRecebimento?
+  comprovanteUrl   String?         @db.Text
+  observacao       String?         @db.Text
+  criadoEm         DateTime        @default(now())
+  atualizadoEm     DateTime        @updatedAt
+  contrato         Contrato        @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  @@index([contratoId])
+  @@index([status])
+  @@index([dataVencimento])
+}

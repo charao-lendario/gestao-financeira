@@ -1,0 +1,17 @@
+{
+  "name": "@gestao-financeira/database",
+  "version": "0.1.0",
+  "description": "Database schema and migrations",
+  "private": true,
+  "scripts": {
+    "prisma": "prisma",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.ts",
+    "generate": "prisma generate"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.7.1",
+    "prisma": "^5.7.1",
+    "typescript": "^5.3.3"
+  }
+}
