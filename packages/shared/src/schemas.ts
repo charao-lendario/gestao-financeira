@@ -1,3 +1,4 @@
+// Re-exporting schemas for Shared Package
 import { z } from 'zod';
 import { FormaPagamento } from './types/index.js';
 
