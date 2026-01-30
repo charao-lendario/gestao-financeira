@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FormaPagamento } from './types.js';
+import { FormaPagamento } from './types/index.js';
 
 // Cliente Schemas
 export const createClienteSchema = z.object({
