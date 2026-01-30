@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCreateContrato, useUpdateContrato, useContratoById, useClientes } from '@/hooks';
+import { useCreateContrato, useUpdateContrato, useContratoById, useClientes, useEmpresas } from '@/hooks';
+import { Trash, Plus } from 'lucide-react';
 import { formatDate, formatCurrency } from '@gestao-financeira/shared/utils';
 import { toast } from 'sonner';
 
@@ -14,6 +15,7 @@ export function ContratoForm({ contratoId }: ContratoFormProps) {
   const router = useRouter();
   const { data: contrato, isLoading: loadingContrato } = useContratoById(contratoId || '');
   const { data: clientesData } = useClientes(1, '');
+  const { data: empresasData } = useEmpresas();
   const createMutation = useCreateContrato();
   const updateMutation = useUpdateContrato();
 
@@ -29,8 +31,18 @@ export function ContratoForm({ contratoId }: ContratoFormProps) {
       dataInicioCobranca: new Date().toISOString().split('T')[0],
       dataFimCobranca: '',
       observacoes: '',
+      rateio: [{ empresaId: '', percentual: 100 }],
     }
   );
+
+  const [rateioError, setRateioError] = useState('');
+
+  // Update default rateio if contrato loaded
+  useEffect(() => {
+    if (contrato && contrato.rateio && !formData.rateio) {
+      setFormData(prev => ({ ...prev, rateio: contrato.rateio }));
+    }
+  }, [contrato]);
 
   // Gerar preview de parcelas (implementação simplificada)
   const parcelasPreview = useMemo(() => {
@@ -98,6 +110,20 @@ export function ContratoForm({ contratoId }: ContratoFormProps) {
       return;
     }
 
+    // Rateio Validation
+    if (formData.rateio && formData.rateio.length > 0) {
+      const total = formData.rateio.reduce((acc: number, item: any) => acc + Number(item.percentual), 0);
+      if (Math.abs(total - 100) > 0.1) {
+        toast.error('A soma do rateio deve ser 100%');
+        return;
+      }
+      // Validate empty companies
+      if (formData.rateio.some((r: any) => !r.empresaId)) {
+        toast.error('Selecione a empresa para o rateio');
+        return;
+      }
+    }
+
     const mutation = contratoId ? updateMutation : createMutation;
 
     // Limpar campos vazios e irrelevantes antes de enviar
@@ -120,6 +146,7 @@ export function ContratoForm({ contratoId }: ContratoFormProps) {
         dataInicioCobranca: formData.dataInicioCobranca || undefined,
         dataFimCobranca: formData.dataFimCobranca || undefined,
       }),
+      rateio: formData.rateio || undefined,
     };
 
     mutation.mutate(
@@ -316,6 +343,81 @@ export function ContratoForm({ contratoId }: ContratoFormProps) {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Observações adicionais"
             />
+          </div>
+
+          {/* Rateio */}
+          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-medium text-gray-900">Rateio de Custos (Empresas do Grupo)</h3>
+              <button
+                type="button"
+                onClick={() => setFormData((prev: any) => ({
+                  ...prev,
+                  rateio: [...(prev.rateio || []), { empresaId: '', percentual: 0 }]
+                }))}
+                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" /> Adicionar Empresa
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {(formData.rateio || []).map((item: any, index: number) => (
+                <div key={index} className="flex gap-4 items-center">
+                  <div className="flex-1">
+                    <select
+                      value={item.empresaId}
+                      onChange={(e) => {
+                        const newRateio = [...(formData.rateio || [])];
+                        newRateio[index].empresaId = e.target.value;
+                        setFormData((prev: any) => ({ ...prev, rateio: newRateio }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      <option value="">Selecione a Empresa</option>
+                      {empresasData?.data?.map((emp: any) => (
+                        <option key={emp.id} value={emp.id}>{emp.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-32 relative">
+                    <input
+                      type="number"
+                      value={item.percentual}
+                      onChange={(e) => {
+                        const newRateio = [...(formData.rateio || [])];
+                        newRateio[index].percentual = parseFloat(e.target.value) || 0;
+                        setFormData((prev: any) => ({ ...prev, rateio: newRateio }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm pr-8"
+                      placeholder="0"
+                    />
+                    <span className="absolute right-3 top-2 text-gray-500 text-sm">%</span>
+                  </div>
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newRateio = (formData.rateio || []).filter((_: any, i: number) => i !== index);
+                        setFormData((prev: any) => ({ ...prev, rateio: newRateio }));
+                      }}
+                      className="text-red-500 hover:text-red-700 p-2"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <div className="text-right text-sm text-gray-500">
+                Total: <span className={
+                  Math.abs((formData.rateio || []).reduce((acc: number, item: any) => acc + (Number(item.percentual) || 0), 0) - 100) < 0.1
+                    ? 'text-green-600 font-bold'
+                    : 'text-red-600 font-bold'
+                }>
+                  {(formData.rateio || []).reduce((acc: number, item: any) => acc + (Number(item.percentual) || 0), 0)}%
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Buttons */}

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FormaPagamento } from './types';
+import { FormaPagamento } from './types.js';
 
 // Cliente Schemas
 export const createClienteSchema = z.object({
@@ -24,6 +24,12 @@ const emptyStringToUndefined = z.preprocess(
   z.coerce.date().optional()
 );
 
+// Rateio Schema
+export const rateioSchema = z.object({
+  empresaId: z.string().uuid(),
+  percentual: z.coerce.number().min(0).max(100),
+});
+
 // Contrato Schemas
 export const createContratoSchema = z.object({
   clienteId: z.string().uuid('ID de cliente inválido'),
@@ -36,6 +42,7 @@ export const createContratoSchema = z.object({
   dataInicioCobranca: emptyStringToUndefined,
   dataFimCobranca: emptyStringToUndefined,
   observacoes: z.string().optional(),
+  rateio: z.array(rateioSchema).optional(),
 });
 
 export const updateContratoSchema = createContratoSchema.partial();
@@ -48,6 +55,7 @@ export const updateParcelaSchema = z.object({
   dataPagamento: z.coerce.date().optional().or(z.null()),
   valorPago: z.coerce.number().positive().optional(),
   formaRecebimento: z.string().optional(),
+  cartaoCreditoId: z.string().uuid().optional(),
   observacao: z.string().optional(),
 });
 
@@ -57,6 +65,7 @@ export const marcarPagoSchema = z.object({
   dataPagamento: z.coerce.date(),
   valorPago: z.coerce.number().positive('Valor pago deve ser positivo'),
   formaRecebimento: z.string().optional(),
+  cartaoCreditoId: z.string().uuid().optional(),
 });
 
 export type MarcarPagoInput = z.infer<typeof marcarPagoSchema>;

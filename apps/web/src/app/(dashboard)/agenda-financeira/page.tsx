@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useParcelas, useMarcarPago } from '@/hooks';
+import { useParcelas, useMarcarPago, useEmpresas } from '@/hooks';
 import { formatCurrency, formatDate } from '@gestao-financeira/shared/utils';
 import { CalendarioFinanceiro } from '@/components/calendario-financeiro';
 import { Check } from 'lucide-react';
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 export default function AgendaFinanceiraPage() {
   const { data: parcelasData } = useParcelas(1, {});
+  const { data: empresasData } = useEmpresas();
   const marcarPagoMutation = useMarcarPago();
   const [selectedParcela, setSelectedParcela] = useState<any>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -16,7 +17,18 @@ export default function AgendaFinanceiraPage() {
     dataPagamento: new Date().toISOString().split('T')[0],
     valorPago: 0,
     formaRecebimento: 'PIX',
+    cartaoCreditoId: '',
   });
+
+  const availableCards = useMemo(() => {
+    if (!empresasData?.data) return [];
+    return empresasData.data.flatMap((e: any) =>
+      (e.cartoes || []).map((c: any) => ({
+        id: c.id,
+        nome: `${c.nome} (${e.nome})`
+      }))
+    );
+  }, [empresasData]);
 
   // Contar parcelas por status
   const stats = useMemo(() => {
@@ -51,6 +63,9 @@ export default function AgendaFinanceiraPage() {
         data: {
           ...pagamentoData,
           dataPagamento: new Date(pagamentoData.dataPagamento),
+          cartaoCreditoId: pagamentoData.formaRecebimento === 'CARTAO' && pagamentoData.cartaoCreditoId
+            ? pagamentoData.cartaoCreditoId
+            : undefined,
         }
       },
       {
@@ -62,6 +77,7 @@ export default function AgendaFinanceiraPage() {
             dataPagamento: new Date().toISOString().split('T')[0],
             valorPago: 0,
             formaRecebimento: 'PIX',
+            cartaoCreditoId: '',
           });
         },
         onError: (error: any) => {
@@ -104,6 +120,7 @@ export default function AgendaFinanceiraPage() {
             dataPagamento: new Date().toISOString().split('T')[0],
             valorPago: Number(parcela.valorPrevisto),
             formaRecebimento: 'PIX',
+            cartaoCreditoId: '',
           });
           if (parcela.status !== 'PAGO') {
             setShowPaymentForm(true);
@@ -138,10 +155,10 @@ export default function AgendaFinanceiraPage() {
             <div>
               <p className="text-sm text-gray-600">Status</p>
               <p className={`font-semibold mt-1 ${selectedParcela.status === 'PAGO'
-                  ? 'text-green-600'
-                  : selectedParcela.status === 'ATRASADO'
-                    ? 'text-red-600'
-                    : 'text-yellow-600'
+                ? 'text-green-600'
+                : selectedParcela.status === 'ATRASADO'
+                  ? 'text-red-600'
+                  : 'text-yellow-600'
                 }`}>
                 {selectedParcela.status}
               </p>
@@ -226,9 +243,33 @@ export default function AgendaFinanceiraPage() {
                   <option value="TRANSFERENCIA">Transferência</option>
                   <option value="BOLETO">Boleto</option>
                   <option value="CHEQUE">Cheque</option>
-                  <option value="CARTAO">Cartão</option>
                 </select>
               </div>
+
+              {pagamentoData.formaRecebimento === 'CARTAO' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Selecione o Cartão
+                  </label>
+                  <select
+                    value={pagamentoData.cartaoCreditoId}
+                    onChange={(e) =>
+                      setPagamentoData((prev) => ({
+                        ...prev,
+                        cartaoCreditoId: e.target.value,
+                      }))
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Selecione...</option>
+                    {availableCards.map((card: any) => (
+                      <option key={card.id} value={card.id}>
+                        {card.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 mt-6 pt-6 border-t">

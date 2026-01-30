@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { createClienteRoutes } from './routes/cliente.routes';
 import { createContratoRoutes } from './routes/contrato.routes';
 import { createParcelaRoutes } from './routes/parcela.routes';
+import { createEmpresaRoutes } from './routes/empresa.routes';
 import { createDashboardRoutes } from './routes/dashboard.routes';
 import { startCronJobs, stopCronJobs } from './jobs/cron-jobs';
 
@@ -26,6 +27,7 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/api/v1/clientes', createClienteRoutes(prisma));
 app.use('/api/v1/contratos', createContratoRoutes(prisma));
 app.use('/api/v1/parcelas', createParcelaRoutes(prisma));
+app.use('/api/v1/empresas', createEmpresaRoutes(prisma));
 app.use('/api/v1/dashboard', createDashboardRoutes(prisma));
 
 // 404 handler

@@ -2,7 +2,7 @@ import { PrismaClient, Contrato } from '@prisma/client';
 import { CreateContratoInput, UpdateContratoInput } from '@gestao-financeira/shared/schemas';
 
 export class ContratoRepository {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaClient) { }
 
   async create(data: CreateContratoInput): Promise<Contrato> {
     const year = new Date(data.dataContrato).getFullYear();
@@ -40,6 +40,9 @@ export class ContratoRepository {
         parcelas: {
           orderBy: { numeroParcela: 'asc' },
         },
+        rateio: {
+          include: { empresa: true }
+        }
       },
     });
   }

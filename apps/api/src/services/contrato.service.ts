@@ -8,7 +8,7 @@ export class ContratoService {
   constructor(
     private repository: ContratoRepository,
     private prisma: PrismaClient
-  ) {}
+  ) { }
 
   async create(data: CreateContratoInput) {
     // Validate client exists
@@ -29,8 +29,31 @@ export class ContratoService {
       throw new Error('Dia de vencimento é obrigatório para mensalidade');
     }
 
+    // Validate rateio if present
+    if (data.rateio && data.rateio.length > 0) {
+      const totalPercent = data.rateio.reduce((sum, r) => sum + Number(r.percentual), 0);
+      if (Math.abs(totalPercent - 100) > 0.01) {
+        throw new Error('A soma das porcentagens do rateio deve ser 100%');
+      }
+    }
+
+    const { rateio, ...contractData } = data;
+
     // Create contract
-    const contrato = await this.repository.create(data);
+    const contrato = await this.repository.create(contractData as any);
+
+    // Handle Rateio Creation
+    if (rateio && rateio.length > 0) {
+      await Promise.all(rateio.map(r =>
+        this.prisma.rateioContrato.create({
+          data: {
+            contratoId: contrato.id,
+            empresaId: r.empresaId,
+            percentual: r.percentual
+          }
+        })
+      ));
+    }
 
     // Generate installments
     const parcelas = GeradorParcelasService.gerarParcelas(

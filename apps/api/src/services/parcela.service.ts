@@ -1,8 +1,12 @@
 import { ParcelaRepository } from '../repositories/parcela.repository';
 import { UpdateParcelaInput, MarcarPagoInput } from '@gestao-financeira/shared/schemas';
+import { PrismaClient } from '@prisma/client';
 
 export class ParcelaService {
-  constructor(private repository: ParcelaRepository) {}
+  constructor(
+    private repository: ParcelaRepository,
+    private prisma: PrismaClient
+  ) { }
 
   async findById(id: string) {
     const parcela = await this.repository.findById(id);
@@ -50,7 +54,76 @@ export class ParcelaService {
       throw new Error('Valor pago não pode ser 10% maior que o previsto');
     }
 
-    return this.repository.marcarPago(id, data);
+    // Update Cartao ID if present
+    if (data.cartaoCreditoId) {
+      await this.prisma.parcela.update({
+        where: { id },
+        data: { cartaoId: data.cartaoCreditoId }
+      });
+    }
+
+    const result = await this.repository.marcarPago(id, data);
+
+    // Business Logic: Real Cash Flow (MovimentacaoCaixa)
+    // Only if NOT credit card
+    if (!data.cartaoCreditoId) {
+      const rateios = await this.prisma.rateioContrato.findMany({
+        where: { contratoId: parcela.contratoId },
+        include: { empresa: true }
+      });
+
+      const valor = Number(data.valorPago);
+      const date = new Date(data.dataPagamento);
+      const desc = `Pagamento Parc. ${parcela.numeroParcela} - ${parcela.contrato.nomeProjeto}`;
+
+      if (rateios.length > 0) {
+        // Split
+        for (const r of rateios) {
+          const valorPart = valor * (Number(r.percentual) / 100);
+          await this.prisma.movimentacaoCaixa.create({
+            data: {
+              data: date,
+              valor: valorPart,
+              tipo: 'SAIDA',
+              descricao: `${desc} (${r.empresa.nome})`,
+              empresaId: r.empresaId,
+              parcelaId: id
+            }
+          });
+        }
+      } else {
+        // Default Company
+        const defaultEmpresa = await this.prisma.empresa.findFirst({ where: { padrao: true } });
+        if (defaultEmpresa) {
+          await this.prisma.movimentacaoCaixa.create({
+            data: {
+              data: date,
+              valor: valor,
+              tipo: 'SAIDA',
+              descricao: desc,
+              empresaId: defaultEmpresa.id,
+              parcelaId: id
+            }
+          });
+        } else {
+          const anyEmp = await this.prisma.empresa.findFirst();
+          if (anyEmp) {
+            await this.prisma.movimentacaoCaixa.create({
+              data: {
+                data: date,
+                valor: valor,
+                tipo: 'SAIDA',
+                descricao: desc,
+                empresaId: anyEmp.id,
+                parcelaId: id
+              }
+            });
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   async findAtrasadas() {

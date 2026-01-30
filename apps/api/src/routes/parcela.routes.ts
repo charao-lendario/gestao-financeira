@@ -10,7 +10,7 @@ export const createParcelaRoutes = (prisma: PrismaClient) => {
   const router = Router();
 
   const repository = new ParcelaRepository(prisma);
-  const service = new ParcelaService(repository);
+  const service = new ParcelaService(repository, prisma);
   const controller = new ParcelaController(service);
 
   router.get('/', (req, res) => controller.findAll(req, res));
