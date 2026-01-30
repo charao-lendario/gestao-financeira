@@ -1,8 +1,8 @@
-import { PrismaClient, Parcela } from '@prisma/client';
+import { PrismaClient, Parcela, FormaRecebimento } from '@prisma/client';
 import { UpdateParcelaInput, MarcarPagoInput } from '@gestao-financeira/shared/schemas';
 
 export class ParcelaRepository {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaClient) { }
 
   async findById(id: string): Promise<Parcela | null> {
     return this.prisma.parcela.findUnique({
@@ -55,7 +55,10 @@ export class ParcelaRepository {
         take: pageSize,
         include: {
           contrato: {
-            include: { cliente: true },
+            include: {
+              cliente: true,
+              rateio: { include: { empresa: true } }
+            },
           },
         },
         orderBy: { dataVencimento: 'asc' },
@@ -69,7 +72,10 @@ export class ParcelaRepository {
   async update(id: string, data: UpdateParcelaInput): Promise<Parcela> {
     return this.prisma.parcela.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        formaRecebimento: data.formaRecebimento ? data.formaRecebimento as FormaRecebimento : undefined
+      },
       include: {
         contrato: {
           include: { cliente: true },
@@ -85,7 +91,7 @@ export class ParcelaRepository {
         status: 'PAGO',
         dataPagamento: data.dataPagamento,
         valorPago: data.valorPago,
-        formaRecebimento: data.formaRecebimento,
+        formaRecebimento: data.formaRecebimento ? data.formaRecebimento as FormaRecebimento : undefined,
         diasAtraso: 0,
       },
       include: {

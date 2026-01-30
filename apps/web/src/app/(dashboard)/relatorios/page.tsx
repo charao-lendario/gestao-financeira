@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useClientes, useParcelas } from '@/hooks';
+import { useClientes, useParcelas, useEmpresas } from '@/hooks';
 import { formatCurrency, formatDate } from '@gestao-financeira/shared/utils';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -34,6 +34,7 @@ export default function RelatoriosPage() {
     const [selectedYear, setSelectedYear] = useState(currentYear);
     const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
     const [selectedCliente, setSelectedCliente] = useState<string>('');
+    const [selectedEmpresa, setSelectedEmpresa] = useState<string>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [selectedFormaPagamento, setSelectedFormaPagamento] = useState<string>('');
     const [dataInicio, setDataInicio] = useState<string>('');
@@ -45,9 +46,11 @@ export default function RelatoriosPage() {
 
     const { data: clientesData } = useClientes(1, '');
     const { data: parcelasData } = useParcelas(1);
+    const { data: empresasData } = useEmpresas();
 
     const parcelas = parcelasData?.data || [];
     const clientes = clientesData?.data || [];
+    const empresas = empresasData?.data || [];
 
     // Filtrar parcelas
     const filteredParcelas = useMemo(() => {
@@ -74,6 +77,30 @@ export default function RelatoriosPage() {
         // Filtro por cliente
         if (selectedCliente) {
             result = result.filter((p: any) => p.contrato?.clienteId === selectedCliente);
+        }
+
+        // Filtro por Empresa (Rateio)
+        if (selectedEmpresa) {
+            result = result.filter((p: any) => {
+                const rateio = p.contrato?.rateio || [];
+                // Se não tem rateio, assume empresa padrão (ou mostra se for a padrão)
+                // Mas por segurança, só mostra se tiver no rateio explícito
+                return rateio.some((r: any) => r.empresaId === selectedEmpresa);
+            }).map((p: any) => {
+                // Ajustar valores baseado na porcentagem
+                const rateio = p.contrato?.rateio?.find((r: any) => r.empresaId === selectedEmpresa);
+                if (rateio) {
+                    const percent = Number(rateio.percentual) / 100;
+                    return {
+                        ...p,
+                        valorPrevisto: Number(p.valorPrevisto) * percent,
+                        valorPago: p.valorPago ? Number(p.valorPago) * percent : p.valorPago,
+                        isRateio: true, // Marker to indicate split view
+                        percentual: rateio.percentual
+                    };
+                }
+                return p;
+            });
         }
 
         // Filtro por status
@@ -128,7 +155,7 @@ export default function RelatoriosPage() {
         });
 
         return result;
-    }, [parcelas, selectedYear, selectedMonth, selectedCliente, selectedStatus, selectedFormaPagamento, dataInicio, dataFim, valorMinimo, valorMaximo, ordenarPor, ordemAsc]);
+    }, [parcelas, selectedYear, selectedMonth, selectedCliente, selectedEmpresa, selectedStatus, selectedFormaPagamento, dataInicio, dataFim, valorMinimo, valorMaximo, ordenarPor, ordemAsc]);
 
     // Calcular totais
     const totalPrevisto = filteredParcelas.reduce((acc: number, p: any) => acc + Number(p.valorPrevisto), 0);
@@ -252,6 +279,7 @@ export default function RelatoriosPage() {
         setSelectedYear(currentYear);
         setSelectedMonth(null);
         setSelectedCliente('');
+        setSelectedEmpresa('');
         setSelectedStatus('');
         setSelectedFormaPagamento('');
         setDataInicio('');
@@ -311,6 +339,21 @@ export default function RelatoriosPage() {
                         >
                             {[currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map((year) => (
                                 <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Empresa (Nova Funcionalidade) */}
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">Empresa do Grupo</label>
+                        <select
+                            value={selectedEmpresa}
+                            onChange={(e) => setSelectedEmpresa(e.target.value)}
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-blue-50 border-blue-200"
+                        >
+                            <option value="">Todas as Empresas (Consolidado)</option>
+                            {empresas.map((emp: any) => (
+                                <option key={emp.id} value={emp.id}>{emp.nome}</option>
                             ))}
                         </select>
                     </div>
