@@ -343,7 +343,7 @@ export default function RelatoriosPage() {
                         </select>
                     </div>
 
-                    {/* Empresa (Nova Funcionalidade) */}
+                    {/* Empresa (Nova Funcionalidade) - Atualizado */}
                     <div>
                         <label className="block text-xs text-gray-500 mb-1">Empresa do Grupo</label>
                         <select
