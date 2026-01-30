@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/services/api';
+import apiClient from '@/lib/api-client';
 
 export function useEmpresas() {
     return useQuery({
         queryKey: ['empresas'],
         queryFn: async () => {
-            const response = await api.get('/empresas');
+            const response = await apiClient.get('/empresas');
             return response.data;
         },
     });
