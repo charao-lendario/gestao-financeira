@@ -52,6 +52,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) return { error };
 
+      // Save user profile to profiles table
+      if (data.user) {
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          email: email,
+          full_name: fullName,
+          created_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+      }
+
       return { error: null };
     } catch (error) {
       return { error };

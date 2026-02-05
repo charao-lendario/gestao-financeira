@@ -3151,10 +3151,13 @@ const AdminPage = () => {
     adminLogout,
     commissionSettings,
     profitShareRecipients,
+    userPermissions,
+    allUsers,
     updateCommissionSettings,
     addProfitShareRecipient,
     updateProfitShareRecipient,
-    deleteProfitShareRecipient
+    deleteProfitShareRecipient,
+    updateUserPermission
   } = useAdmin();
 
   const [activeTab, setActiveTab] = useState<'commissions' | 'profitShare' | 'permissions'>('commissions');
@@ -3499,15 +3502,114 @@ const AdminPage = () => {
             <div>
               <h3 className="text-lg font-bold text-slate-800 mb-2">Permissões de Usuários</h3>
               <p className="text-sm text-slate-500">
-                Defina o que cada usuário pode acessar no sistema.
+                Defina o que cada usuário pode acessar no sistema. Todos os usuários cadastrados aparecem abaixo.
               </p>
             </div>
 
-            <div className="text-center py-12 text-slate-400">
-              <Lock size={48} className="mx-auto mb-4 opacity-20" />
-              <p className="font-medium">Em desenvolvimento</p>
-              <p className="text-sm mt-2">As permissões de usuários serão implementadas em breve.</p>
-            </div>
+            {allUsers.length === 0 ? (
+              <div className="text-center py-12 text-slate-400">
+                <Users size={48} className="mx-auto mb-4 opacity-20" />
+                <p className="font-medium">Nenhum usuário cadastrado</p>
+                <p className="text-sm mt-2">Quando usuários se cadastrarem, eles aparecerão aqui.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {allUsers.map(user => {
+                  const userPerm = userPermissions.find(p => p.userId === user.id);
+                  const permissions = userPerm?.permissions || {
+                    dashboard: true,
+                    companies: true,
+                    contracts: true,
+                    agenda: true,
+                    cashflow: true,
+                    cards: true,
+                    commissions: false,
+                    clients: true,
+                    suppliers: true,
+                    monthlyClosing: false
+                  };
+
+                  const permissionLabels: { key: keyof typeof permissions; label: string }[] = [
+                    { key: 'dashboard', label: 'Dashboard' },
+                    { key: 'companies', label: 'Empresas' },
+                    { key: 'contracts', label: 'Contratos' },
+                    { key: 'agenda', label: 'Parcelas' },
+                    { key: 'cashflow', label: 'Fluxo de Caixa' },
+                    { key: 'cards', label: 'Cartões' },
+                    { key: 'clients', label: 'Clientes' },
+                    { key: 'suppliers', label: 'Fornecedores' },
+                    { key: 'commissions', label: 'Comissões' },
+                    { key: 'monthlyClosing', label: 'Fechamento Mensal' }
+                  ];
+
+                  const handleTogglePermission = (key: keyof typeof permissions) => {
+                    const newPermissions = { ...permissions, [key]: !permissions[key] };
+                    updateUserPermission(user.id, user.fullName, user.email, newPermissions);
+                  };
+
+                  const handleToggleAll = (value: boolean) => {
+                    const newPermissions = Object.keys(permissions).reduce((acc, key) => {
+                      acc[key as keyof typeof permissions] = value;
+                      return acc;
+                    }, {} as typeof permissions);
+                    updateUserPermission(user.id, user.fullName, user.email, newPermissions);
+                  };
+
+                  return (
+                    <div key={user.id} className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-slate-300 rounded-full flex items-center justify-center text-slate-600 font-bold">
+                            {user.fullName.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-800">{user.fullName}</p>
+                            <p className="text-sm text-slate-500">{user.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleToggleAll(true)}
+                            className="text-xs px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                          >
+                            Liberar Todos
+                          </button>
+                          <button
+                            onClick={() => handleToggleAll(false)}
+                            className="text-xs px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                          >
+                            Bloquear Todos
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        {permissionLabels.map(({ key, label }) => (
+                          <label
+                            key={key}
+                            className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-all ${
+                              permissions[key]
+                                ? 'bg-green-100 border border-green-300'
+                                : 'bg-white border border-slate-200'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={permissions[key]}
+                              onChange={() => handleTogglePermission(key)}
+                              className="w-4 h-4 accent-green-600"
+                            />
+                            <span className={`text-sm font-medium ${permissions[key] ? 'text-green-800' : 'text-slate-600'}`}>
+                              {label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -7,6 +7,13 @@ import type {
   AdminSettings
 } from '../types';
 
+interface UserProfile {
+  id: string;
+  email: string;
+  fullName: string;
+  createdAt: string;
+}
+
 interface AdminContextType {
   isAdmin: boolean;
   isAdminLoggedIn: boolean;
@@ -15,11 +22,12 @@ interface AdminContextType {
   commissionSettings: CommissionSettings;
   profitShareRecipients: ProfitShareRecipient[];
   userPermissions: UserPermission[];
+  allUsers: UserProfile[];
   updateCommissionSettings: (settings: CommissionSettings) => Promise<void>;
   addProfitShareRecipient: (recipient: Omit<ProfitShareRecipient, 'id'>) => Promise<void>;
   updateProfitShareRecipient: (id: string, recipient: Partial<ProfitShareRecipient>) => Promise<void>;
   deleteProfitShareRecipient: (id: string) => Promise<void>;
-  updateUserPermission: (userId: string, permissions: UserPermission['permissions']) => Promise<void>;
+  updateUserPermission: (userId: string, userName: string, userEmail: string, permissions: UserPermission['permissions']) => Promise<void>;
   loading: boolean;
 }
 
@@ -36,6 +44,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [commissionSettings, setCommissionSettings] = useState<CommissionSettings>(defaultCommissionSettings);
   const [profitShareRecipients, setProfitShareRecipients] = useState<ProfitShareRecipient[]>([]);
   const [userPermissions, setUserPermissions] = useState<UserPermission[]>([]);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Check for admin session on mount
@@ -89,6 +98,21 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           userName: p.user_name,
           userEmail: p.user_email,
           permissions: p.permissions
+        })));
+      }
+
+      // Load all user profiles
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (profilesData) {
+        setAllUsers(profilesData.map(p => ({
+          id: p.id,
+          email: p.email,
+          fullName: p.full_name || p.email,
+          createdAt: p.created_at
         })));
       }
 
@@ -202,19 +226,33 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const updateUserPermission = async (userId: string, permissions: UserPermission['permissions']) => {
+  const updateUserPermission = async (userId: string, userName: string, userEmail: string, permissions: UserPermission['permissions']) => {
     try {
       await supabase
         .from('user_permissions')
         .upsert({
           user_id: userId,
+          user_name: userName,
+          user_email: userEmail,
           permissions,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
 
-      setUserPermissions(prev => prev.map(p =>
-        p.userId === userId ? { ...p, permissions } : p
-      ));
+      // Check if user already exists in permissions
+      const existingIndex = userPermissions.findIndex(p => p.userId === userId);
+      if (existingIndex >= 0) {
+        setUserPermissions(prev => prev.map(p =>
+          p.userId === userId ? { ...p, permissions } : p
+        ));
+      } else {
+        // Add new permission entry
+        setUserPermissions(prev => [...prev, {
+          userId,
+          userName,
+          userEmail,
+          permissions
+        }]);
+      }
     } catch (error) {
       console.error('Error updating user permissions:', error);
     }
@@ -229,6 +267,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       commissionSettings,
       profitShareRecipients,
       userPermissions,
+      allUsers,
       updateCommissionSettings,
       addProfitShareRecipient,
       updateProfitShareRecipient,
