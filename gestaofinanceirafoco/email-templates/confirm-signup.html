@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirme seu Email - FinanceHolding</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f1f5f9;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 40px; text-align: center; border-radius: 16px 16px 0 0;">
+                            <div style="width: 80px; height: 80px; background-color: #f59e0b; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                                <span style="color: #ffffff; font-size: 36px; font-weight: bold;">🏢</span>
+                            </div>
+                            <h1 style="color: #ffffff; font-size: 32px; font-weight: 700; margin: 0; padding: 0;">FinanceHolding</h1>
+                            <p style="color: #cbd5e1; font-size: 14px; margin: 8px 0 0 0;">Gestão Financeira Profissional</p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin: 0 0 16px 0;">Bem-vindo à FinanceHolding! 🎉</h2>
+
+                            <p style="color: #475569; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+                                Olá, <strong>{{ .Email }}</strong>!
+                            </p>
+
+                            <p style="color: #475569; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+                                Obrigado por se cadastrar na nossa plataforma! Estamos muito felizes em ter você conosco.
+                            </p>
+
+                            <p style="color: #475569; font-size: 16px; line-height: 1.6; margin: 0 0 32px 0;">
+                                Para começar a gerenciar suas finanças de forma profissional, confirme seu endereço de email clicando no botão abaixo:
+                            </p>
+
+                            <!-- CTA Button -->
+                            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td align="center" style="padding: 0;">
+                                        <a href="{{ .ConfirmationURL }}" style="display: inline-block; background-color: #f59e0b; color: #ffffff; font-size: 16px; font-weight: 700; text-decoration: none; padding: 16px 48px; border-radius: 8px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2);">
+                                            ✅ Confirmar Email
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Alternative Link -->
+                            <p style="color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 32px 0 0 0; text-align: center;">
+                                Ou copie e cole este link no seu navegador:
+                            </p>
+                            <p style="background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 13px; color: #475569; word-break: break-all; margin: 8px 0 0 0;">
+                                {{ .ConfirmationURL }}
+                            </p>
+
+                            <!-- Info Box -->
+                            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin-top: 32px; border-radius: 4px;">
+                                <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.5;">
+                                    <strong>⏰ Importante:</strong> Este link expira em 24 horas. Se você não solicitou este cadastro, ignore este email.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Features Section -->
+                    <tr>
+                        <td style="padding: 0 40px 40px 40px;">
+                            <h3 style="color: #0f172a; font-size: 18px; font-weight: 700; margin: 0 0 20px 0; text-align: center;">O que você pode fazer:</h3>
+
+                            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="width: 50%; padding: 12px;">
+                                        <div style="text-align: center;">
+                                            <div style="font-size: 32px; margin-bottom: 8px;">🏢</div>
+                                            <p style="color: #475569; font-size: 14px; margin: 0; font-weight: 600;">Gerenciar Empresas</p>
+                                        </div>
+                                    </td>
+                                    <td style="width: 50%; padding: 12px;">
+                                        <div style="text-align: center;">
+                                            <div style="font-size: 32px; margin-bottom: 8px;">📊</div>
+                                            <p style="color: #475569; font-size: 14px; margin: 0; font-weight: 600;">Dashboard Completo</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width: 50%; padding: 12px;">
+                                        <div style="text-align: center;">
+                                            <div style="font-size: 32px; margin-bottom: 8px;">💰</div>
+                                            <p style="color: #475569; font-size: 14px; margin: 0; font-weight: 600;">Fluxo de Caixa</p>
+                                        </div>
+                                    </td>
+                                    <td style="width: 50%; padding: 12px;">
+                                        <div style="text-align: center;">
+                                            <div style="font-size: 32px; margin-bottom: 8px;">📅</div>
+                                            <p style="color: #475569; font-size: 14px; margin: 0; font-weight: 600;">Agenda Financeira</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8fafc; padding: 24px; text-align: center; border-radius: 0 0 16px 16px; border-top: 1px solid #e2e8f0;">
+                            <p style="color: #64748b; font-size: 14px; margin: 0 0 8px 0;">
+                                © 2026 FinanceHolding. Todos os direitos reservados.
+                            </p>
+                            <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+                                Gestão financeira completa para holdings e empresas
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
