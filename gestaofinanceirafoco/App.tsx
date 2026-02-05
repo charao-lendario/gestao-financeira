@@ -3179,12 +3179,64 @@ const AdminPage = () => {
     percentage: 0
   });
 
+  // Permissions state
+  const [pendingPermissions, setPendingPermissions] = useState<Record<string, {
+    userId: string;
+    userName: string;
+    userEmail: string;
+    permissions: Record<string, boolean>;
+  }>>({});
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingTabChange, setPendingTabChange] = useState<'commissions' | 'profitShare' | 'permissions' | null>(null);
+
+  const hasUnsavedPermissions = Object.keys(pendingPermissions).length > 0;
+
   useEffect(() => {
     setCommissionForm({
       sdrPercentage: commissionSettings.sdrPercentage,
       closerPercentage: commissionSettings.closerPercentage
     });
   }, [commissionSettings]);
+
+  // Handle tab change with unsaved check
+  const handleTabChange = (newTab: 'commissions' | 'profitShare' | 'permissions') => {
+    if (activeTab === 'permissions' && hasUnsavedPermissions && newTab !== 'permissions') {
+      setPendingTabChange(newTab);
+      setShowUnsavedModal(true);
+    } else {
+      setActiveTab(newTab);
+    }
+  };
+
+  // Save all pending permissions
+  const handleSavePermissions = async () => {
+    for (const key of Object.keys(pendingPermissions)) {
+      const p = pendingPermissions[key];
+      await updateUserPermission(p.userId, p.userName, p.userEmail, p.permissions as any);
+    }
+    setPendingPermissions({});
+    alert('Permissões salvas com sucesso!');
+  };
+
+  // Discard changes and change tab
+  const handleDiscardAndChangeTab = () => {
+    setPendingPermissions({});
+    setShowUnsavedModal(false);
+    if (pendingTabChange) {
+      setActiveTab(pendingTabChange);
+      setPendingTabChange(null);
+    }
+  };
+
+  // Save and change tab
+  const handleSaveAndChangeTab = async () => {
+    await handleSavePermissions();
+    setShowUnsavedModal(false);
+    if (pendingTabChange) {
+      setActiveTab(pendingTabChange);
+      setPendingTabChange(null);
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -3284,7 +3336,7 @@ const AdminPage = () => {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => handleTabChange(tab.id as any)}
               className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
                 activeTab === tab.id
                   ? 'bg-slate-900 text-amber-500'
@@ -3293,6 +3345,9 @@ const AdminPage = () => {
             >
               <Icon size={18} />
               {tab.label}
+              {tab.id === 'permissions' && hasUnsavedPermissions && (
+                <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+              )}
             </button>
           );
         })}
@@ -3499,11 +3554,25 @@ const AdminPage = () => {
         {/* User Permissions */}
         {activeTab === 'permissions' && (
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-800 mb-2">Permissões de Usuários</h3>
-              <p className="text-sm text-slate-500">
-                Defina o que cada usuário pode acessar no sistema. Todos os usuários cadastrados aparecem abaixo.
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">Permissões de Usuários</h3>
+                <p className="text-sm text-slate-500">
+                  Defina o que cada usuário pode acessar no sistema. Todos os usuários cadastrados aparecem abaixo.
+                </p>
+              </div>
+              {hasUnsavedPermissions && (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-amber-600 font-medium">Alterações não salvas</span>
+                  <button
+                    onClick={handleSavePermissions}
+                    className="px-5 py-2.5 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+                  >
+                    <CheckCircle size={18} />
+                    Salvar Permissões
+                  </button>
+                </div>
+              )}
             </div>
 
             {allUsers.length === 0 ? (
@@ -3515,8 +3584,9 @@ const AdminPage = () => {
             ) : (
               <div className="space-y-4">
                 {allUsers.map(user => {
-                  const userPerm = userPermissions.find(p => p.userId === user.id);
-                  const permissions = userPerm?.permissions || {
+                  const savedPerm = userPermissions.find(p => p.userId === user.id);
+                  const pendingPerm = pendingPermissions[user.id];
+                  const defaultPerms = {
                     dashboard: true,
                     companies: true,
                     contracts: true,
@@ -3528,8 +3598,10 @@ const AdminPage = () => {
                     suppliers: true,
                     monthlyClosing: false
                   };
+                  const permissions = pendingPerm?.permissions || savedPerm?.permissions || defaultPerms;
+                  const hasChanges = !!pendingPerm;
 
-                  const permissionLabels: { key: keyof typeof permissions; label: string }[] = [
+                  const permissionLabels: { key: keyof typeof defaultPerms; label: string }[] = [
                     { key: 'dashboard', label: 'Dashboard' },
                     { key: 'companies', label: 'Empresas' },
                     { key: 'contracts', label: 'Contratos' },
@@ -3542,28 +3614,50 @@ const AdminPage = () => {
                     { key: 'monthlyClosing', label: 'Fechamento Mensal' }
                   ];
 
-                  const handleTogglePermission = (key: keyof typeof permissions) => {
-                    const newPermissions = { ...permissions, [key]: !permissions[key] };
-                    updateUserPermission(user.id, user.fullName, user.email, newPermissions);
+                  const handleTogglePermission = (key: keyof typeof defaultPerms) => {
+                    const currentPerms = permissions as Record<string, boolean>;
+                    const newPermissions = { ...currentPerms, [key]: !currentPerms[key] };
+                    setPendingPermissions(prev => ({
+                      ...prev,
+                      [user.id]: {
+                        userId: user.id,
+                        userName: user.fullName,
+                        userEmail: user.email,
+                        permissions: newPermissions
+                      }
+                    }));
                   };
 
                   const handleToggleAll = (value: boolean) => {
-                    const newPermissions = Object.keys(permissions).reduce((acc, key) => {
-                      acc[key as keyof typeof permissions] = value;
+                    const newPermissions = Object.keys(defaultPerms).reduce((acc, key) => {
+                      acc[key] = value;
                       return acc;
-                    }, {} as typeof permissions);
-                    updateUserPermission(user.id, user.fullName, user.email, newPermissions);
+                    }, {} as Record<string, boolean>);
+                    setPendingPermissions(prev => ({
+                      ...prev,
+                      [user.id]: {
+                        userId: user.id,
+                        userName: user.fullName,
+                        userEmail: user.email,
+                        permissions: newPermissions
+                      }
+                    }));
                   };
 
                   return (
-                    <div key={user.id} className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                    <div key={user.id} className={`bg-slate-50 p-5 rounded-xl border ${hasChanges ? 'border-amber-400 ring-2 ring-amber-100' : 'border-slate-200'}`}>
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-slate-300 rounded-full flex items-center justify-center text-slate-600 font-bold">
                             {user.fullName.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-800">{user.fullName}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-slate-800">{user.fullName}</p>
+                              {hasChanges && (
+                                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Modificado</span>
+                              )}
+                            </div>
                             <p className="text-sm text-slate-500">{user.email}</p>
                           </div>
                         </div>
@@ -3588,18 +3682,18 @@ const AdminPage = () => {
                           <label
                             key={key}
                             className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-all ${
-                              permissions[key]
+                              (permissions as Record<string, boolean>)[key]
                                 ? 'bg-green-100 border border-green-300'
                                 : 'bg-white border border-slate-200'
                             }`}
                           >
                             <input
                               type="checkbox"
-                              checked={permissions[key]}
+                              checked={(permissions as Record<string, boolean>)[key]}
                               onChange={() => handleTogglePermission(key)}
                               className="w-4 h-4 accent-green-600"
                             />
-                            <span className={`text-sm font-medium ${permissions[key] ? 'text-green-800' : 'text-slate-600'}`}>
+                            <span className={`text-sm font-medium ${(permissions as Record<string, boolean>)[key] ? 'text-green-800' : 'text-slate-600'}`}>
                               {label}
                             </span>
                           </label>
@@ -3610,6 +3704,66 @@ const AdminPage = () => {
                 })}
               </div>
             )}
+
+            {/* Save button at bottom */}
+            {hasUnsavedPermissions && (
+              <div className="flex justify-end pt-4 border-t border-slate-200">
+                <button
+                  onClick={() => setPendingPermissions({})}
+                  className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors mr-3"
+                >
+                  Descartar Alterações
+                </button>
+                <button
+                  onClick={handleSavePermissions}
+                  className="px-6 py-2.5 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+                >
+                  <CheckCircle size={18} />
+                  Salvar Permissões
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Unsaved Changes Modal */}
+        {showUnsavedModal && (
+          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative animate-in zoom-in-95 duration-200">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle size={32} className="text-amber-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Alterações não salvas</h2>
+                <p className="text-slate-500 mt-2">
+                  Você tem alterações de permissões que não foram salvas. Deseja salvar antes de sair?
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleSaveAndChangeTab}
+                  className="w-full py-3 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 transition-colors"
+                >
+                  Salvar e Continuar
+                </button>
+                <button
+                  onClick={handleDiscardAndChangeTab}
+                  className="w-full py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
+                >
+                  Descartar Alterações
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUnsavedModal(false);
+                    setPendingTabChange(null);
+                  }}
+                  className="w-full py-3 text-slate-500 hover:text-slate-700 font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
